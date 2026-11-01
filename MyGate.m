@@ -974,17 +974,18 @@ static void MGDescribeView(UIView *v, CGFloat winArea, int depth, NSMutableArray
 
 void MGRestyleMenuWindow(void) {
     @try {
+        NSMutableArray *all = [NSMutableArray array];
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (w.windowLevel < 5000 || w.hidden) continue;
+            if (!MGIsMenuWindow(w) || w.hidden) continue;
             CGFloat area = w.bounds.size.width * w.bounds.size.height;
-            NSMutableArray *lines = [NSMutableArray array];
-            [lines addObject:[NSString stringWithFormat:@"%@ lv=%.0f",
-                              NSStringFromClass(w.class), w.windowLevel]];
-            MGDescribeView(w, area, 1, lines);
-            NSLog(@"[MGRestyle] %@", [lines componentsJoinedByString:@" | "]);
-            MGShowDiagText([lines componentsJoinedByString:@"\n"]);
-            return;
+            [all addObject:[NSString stringWithFormat:@"▼ %@ lv=%.0f %.0fx%.0f",
+                            NSStringFromClass(w.class), w.windowLevel,
+                            w.bounds.size.width, w.bounds.size.height]];
+            MGDescribeView(w, area, 1, all);
+            if (all.count > 40) break;
         }
+        if (!all.count) return;
+        MGShowDiagText([all componentsJoinedByString:@"\n"]);
     } @catch (NSException *e) {}
 }
 
@@ -1075,6 +1076,8 @@ void MGInstallCloseButton(void) {
     });
 }
 
+static UILabel *gDiagLabel = nil;
+
 static void MGShowDiagText(NSString *text) {
     dispatch_async(dispatch_get_main_queue(), ^{
         @try {
@@ -1091,30 +1094,32 @@ static void MGShowDiagText(NSString *text) {
                 w.hidden = NO;
             }
             UIView *host = gDiagWindow.rootViewController.view;
-            for (UIView *old in host.subviews) [old removeFromSuperview];
 
-            UILabel *l = [UILabel new];
+            UILabel *l = gDiagLabel;
+            if (!l || !l.superview) {
+                for (UIView *old in host.subviews) [old removeFromSuperview];
+                l = [UILabel new];
+                l.font = [UIFont boldSystemFontOfSize:11];
+                l.textColor = [UIColor whiteColor];
+                l.backgroundColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.86];
+                l.textAlignment = NSTextAlignmentLeft;
+                l.numberOfLines = 0;
+                l.layer.cornerRadius = 10;
+                l.clipsToBounds = YES;
+                l.translatesAutoresizingMaskIntoConstraints = NO;
+                [host addSubview:l];
+                [NSLayoutConstraint activateConstraints:@[
+                    [l.leadingAnchor constraintEqualToAnchor:host.leadingAnchor constant:6],
+                    [l.trailingAnchor constraintEqualToAnchor:host.trailingAnchor constant:-6],
+                    [l.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:60],
+                    [l.heightAnchor constraintLessThanOrEqualToConstant:host.bounds.size.height * 0.55],
+                ]];
+                gDiagLabel = l;
+            }
             l.text = text;
-            l.font = [UIFont boldSystemFontOfSize:12];
-            l.textColor = [UIColor whiteColor];
-            l.backgroundColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.82];
-            l.textAlignment = NSTextAlignmentCenter;
-            l.numberOfLines = 0;
-            l.layer.cornerRadius = 10;
-            l.clipsToBounds = YES;
-            l.translatesAutoresizingMaskIntoConstraints = NO;
-            [host addSubview:l];
-            [NSLayoutConstraint activateConstraints:@[
-                [l.centerXAnchor constraintEqualToAnchor:host.centerXAnchor],
-                [l.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:70],
-                [l.widthAnchor constraintLessThanOrEqualToConstant:host.bounds.size.width - 30],
-                [l.heightAnchor constraintGreaterThanOrEqualToConstant:40],
-            ]];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(20 * NSEC_PER_SEC)),
-                           dispatch_get_main_queue(), ^{
-                [UIView animateWithDuration:0.3 animations:^{ l.alpha = 0; }
-                                 completion:^(BOOL f) { [l removeFromSuperview]; }];
-            });
+            l.hidden = NO;
+            l.alpha = 1.0;
+            [host bringSubviewToFront:l];
         } @catch (NSException *e) {}
     });
 }
