@@ -469,12 +469,17 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
         @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
         self.hasRestyled = NO;
     } else {
-        // 打开：立刻改 UI，再触发原版
+        // 打开：立刻改 UI，再清残留 + 触发原版
+        extern void MGResetMenuWindows(void);
         [self applyMenuState:YES];
         self.hasRestyled = NO;
-        MGTrigger(@"打开菜单");
+        @try { MGResetMenuWindows(); } @catch (NSException *e) {}
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            MGTrigger(@"打开菜单");
+        });
         __weak typeof(self) weakSelf = self;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.7 * NSEC_PER_SEC)),
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.9 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             @try { [weakSelf restyleIfNeeded]; } @catch (NSException *e) {}
         });
