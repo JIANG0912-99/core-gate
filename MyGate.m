@@ -545,7 +545,7 @@ static UIWindowScene *MGFindScene(void);
 static CAShapeLayer *MGArc(CGFloat radius, CGFloat start, CGFloat end,
                            UIColor *color, CGFloat width) {
     CAShapeLayer *l = [CAShapeLayer layer];
-    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointZero
+    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake(0, 0)
                                                      radius:radius
                                                  startAngle:start
                                                    endAngle:end
