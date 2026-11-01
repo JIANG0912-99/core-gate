@@ -913,35 +913,55 @@ static BOOL MGIsMenuWindow(UIWindow *w) {
     return w.windowLevel >= 5000;
 }
 
-// 供首页使用：判断原版浮窗（QXA131/QXA132）是否打开
+// 只有「面板」才算打开（悬浮球 71x70 不算）
+static BOOL MGIsPanelWindow(UIWindow *w) {
+    if (!MGIsMenuWindow(w)) return NO;
+    CGSize s = w.bounds.size;
+    return s.width > 200 && s.height > 200;
+}
+
 BOOL MGMenuIsOpen(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (MGIsMenuWindow(w) && !w.hidden) return YES;
+            if (MGIsPanelWindow(w) && !w.hidden && w.alpha > 0.05) return YES;
         }
     } @catch (NSException *e) {}
     return NO;
 }
 
-// 供首页使用：关闭原版浮窗
+// 关闭：所有浮窗窗口（含悬浮球）
 void MGCloseMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (MGIsMenuWindow(w)) {
-                MGLog(@"[MGMenu] close %@ lv=%.0f", NSStringFromClass(w.class), w.windowLevel);
-                w.hidden = YES;
-            }
+            if (!MGIsMenuWindow(w)) continue;
+            MGLog(@"[MGMenu] close %@ %.0fx%.0f", NSStringFromClass(w.class),
+                  w.bounds.size.width, w.bounds.size.height);
+            w.hidden = YES;
         }
     } @catch (NSException *e) {}
 }
 
-// 供首页使用：重新显示原版浮窗（菜单处于「开启」状态时，切页面回来了要恢复）
+// 重置：把所有浮窗窗口收起来，让原版状态机回到「未打开」
+void MGResetMenuWindows(void) {
+    @try {
+        for (UIWindow *w in UIApplication.sharedApplication.windows) {
+            if (!MGIsMenuWindow(w)) continue;
+            MGLog(@"[MGMenu] reset %@ %.0fx%.0f", NSStringFromClass(w.class),
+                  w.bounds.size.width, w.bounds.size.height);
+            w.hidden = YES;
+        }
+    } @catch (NSException *e) {}
+}
+
+// 恢复：所有浮窗窗口（含悬浮球），同时修正 alpha
 void MGShowMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            if (w.hidden) {
-                MGLog(@"[MGMenu] show %@ lv=%.0f", NSStringFromClass(w.class), w.windowLevel);
+            if (w.hidden || w.alpha < 0.05) {
+                MGLog(@"[MGMenu] show %@ %.0fx%.0f", NSStringFromClass(w.class),
+                      w.bounds.size.width, w.bounds.size.height);
+                w.alpha = 1.0;
                 w.hidden = NO;
             }
         }
