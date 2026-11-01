@@ -646,7 +646,7 @@ static void MGShowLaunch(void) {
             ]];
 
             UIWindow *w = [[UIWindow alloc] initWithWindowScene:scene];
-            w.windowLevel = UIWindowLevelAlert + 2;
+            w.windowLevel = UIWindowLevelAlert + 3;
             w.rootViewController = vc;
             w.backgroundColor = vc.view.backgroundColor;
             gLaunchWindow = w;
@@ -803,6 +803,77 @@ static void MGRewriteUI(void) {
             }
         } @catch (NSException *e) {}
     });
+}
+
+// ---- 浮窗诊断：打印新出现的窗口/视图层级 ----
+static void MGShowDiagText(NSString *text) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        @try {
+            UIWindow *win = nil;
+            for (UIWindow *w in UIApplication.sharedApplication.windows) {
+                if (w.windowLevel <= UIWindowLevelNormal + 1 && !w.hidden) { win = w; break; }
+            }
+            if (!win) return;
+            UILabel *l = [UILabel new];
+            l.text = text;
+            l.font = [UIFont boldSystemFontOfSize:13];
+            l.textColor = [UIColor whiteColor];
+            l.backgroundColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.78];
+            l.textAlignment = NSTextAlignmentCenter;
+            l.numberOfLines = 0;
+            l.layer.cornerRadius = 10;
+            l.clipsToBounds = YES;
+            l.translatesAutoresizingMaskIntoConstraints = NO;
+            [win addSubview:l];
+            [NSLayoutConstraint activateConstraints:@[
+                [l.centerXAnchor constraintEqualToAnchor:win.centerXAnchor],
+                [l.topAnchor constraintEqualToAnchor:win.safeAreaLayoutGuide.topAnchor constant:66],
+                [l.widthAnchor constraintLessThanOrEqualToConstant:win.bounds.size.width - 40],
+                [l.heightAnchor constraintGreaterThanOrEqualToConstant:44],
+            ]];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)),
+                           dispatch_get_main_queue(), ^{ [l removeFromSuperview]; });
+        } @catch (NSException *e) {}
+    });
+}
+
+static void MGDiagView(UIView *v, int depth) {
+    if (depth > 6) return;
+    NSString *pad = [@"" stringByPaddingToLength:depth * 2 withString:@" " startingAtIndex:0];
+    NSLog(@"[MGDiag] %@%@ frame=%@", pad, NSStringFromClass(v.class),
+          NSStringFromCGRect(v.frame));
+    for (UIView *s in v.subviews) MGDiagView(s, depth + 1);
+}
+
+static void MGDiagWindows(void) {
+    static BOOL done = NO;
+    static int n = 0;
+    if (done) return;
+    @try {
+        for (UIWindow *w in UIApplication.sharedApplication.windows) {
+            if (w == gGateWindow || w == gLaunchWindow) continue;
+            if (w.windowLevel > UIWindowLevelNormal + 1) {
+                done = YES;
+                NSString *info = [NSString stringWithFormat:@"OVERLAY\n%@\nlevel=%.0f",
+                                  NSStringFromClass(w.class), w.windowLevel];
+                MGShowDiagText(info);
+                NSLog(@"[MGDiag] ===== OVERLAY WINDOW level=%.0f class=%@ =====",
+                      w.windowLevel, NSStringFromClass(w.class));
+                MGDiagView(w, 0);
+                return;
+            }
+        }
+        if (n++ < 3) {
+            for (UIWindow *w in UIApplication.sharedApplication.windows) {
+                if (w.windowLevel <= UIWindowLevelNormal + 1) {
+                    NSLog(@"[MGDiag] ===== MAIN WINDOW class=%@ root=%@ =====",
+                          NSStringFromClass(w.class),
+                          w.rootViewController ? NSStringFromClass(w.rootViewController.class) : @"nil");
+                    MGDiagView(w, 0);
+                }
+            }
+        }
+    } @catch (NSException *e) {}
 }
 
 // ---- 顶部悬浮标签：显示服务器返回的真实到期时间 ----
@@ -1022,6 +1093,7 @@ static void MGInstallHooks(void) {
         [NSTimer scheduledTimerWithTimeInterval:2.5 repeats:YES block:^(NSTimer *t) {
             @try { MGRewriteUI(); } @catch (NSException *e) {}
             @try { MGShowExpiryBadge(); } @catch (NSException *e) {}
+            @try { MGDiagWindows(); } @catch (NSException *e) {}
         }];
     } @catch (NSException *e) {
         MGLog(@"timer failed: %@", e);
@@ -1066,7 +1138,7 @@ static void MGInit(void) {
     // 尽早挂上文字拦截，赶在主界面 UILabel/CATextLayer 设值之前
     MGInstallTextHooks();
     // 启动画面：盖住原版「Core 引擎启动中」
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)),
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         @try { MGShowLaunch(); } @catch (NSException *e) {}
     });
