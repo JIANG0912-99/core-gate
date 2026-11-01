@@ -484,9 +484,8 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 - (void)restyleIfNeeded {
     extern BOOL MGMenuIsOpen(void);
     extern void MGRestyleMenuWindow(void);
-    if (!self.menuOpen || self.hasRestyled) return;
+    if (!self.menuOpen) return;
     if (!MGMenuIsOpen()) return;
-    self.hasRestyled = YES;
     MGRestyleMenuWindow();
 }
 
