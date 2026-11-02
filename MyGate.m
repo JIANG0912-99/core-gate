@@ -403,12 +403,12 @@ static void MGPost(NSString *path, NSDictionary *body,
 - (void)viewDidLoad {
     [super viewDidLoad];
     @try {
-    self.view.backgroundColor = [UIColor colorWithRed:0.05 green:0.06 blue:0.09 alpha:1];
+    self.view.backgroundColor = [UIColor colorWithRed:0.980 green:0.980 blue:0.984 alpha:1];
 
     UILabel *title = [UILabel new];
     title.text = kDisplayName;
-    title.font = [UIFont boldSystemFontOfSize:26];
-    title.textColor = UIColor.whiteColor;
+    title.font = [UIFont boldSystemFontOfSize:30];
+    title.textColor = [UIColor colorWithRed:0.063 green:0.063 blue:0.078 alpha:1];
     title.textAlignment = NSTextAlignmentCenter;
     title.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:title];
@@ -416,16 +416,18 @@ static void MGPost(NSString *path, NSDictionary *body,
     UILabel *sub = [UILabel new];
     sub.text = @"请输入授权卡密";
     sub.font = [UIFont systemFontOfSize:14];
-    sub.textColor = [UIColor colorWithWhite:1 alpha:0.55];
+    sub.textColor = [UIColor colorWithRed:0.549 green:0.569 blue:0.612 alpha:1];
     sub.textAlignment = NSTextAlignmentCenter;
     sub.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:sub];
 
     self.field = [UITextField new];
     self.field.placeholder = @"XXXX-XXXX-XXXX-XXXX";
-    self.field.textColor = UIColor.whiteColor;
-    self.field.backgroundColor = [UIColor colorWithWhite:1 alpha:0.08];
-    self.field.layer.cornerRadius = 10;
+    self.field.textColor = [UIColor colorWithRed:0.063 green:0.063 blue:0.078 alpha:1];
+    self.field.backgroundColor = [UIColor whiteColor];
+    self.field.layer.cornerRadius = 12;
+    self.field.layer.borderWidth = 1;
+    self.field.layer.borderColor = [UIColor colorWithRed:0.918 green:0.922 blue:0.941 alpha:1].CGColor;
     self.field.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
     self.field.autocorrectionType = UITextAutocorrectionTypeNo;
     self.field.clearButtonMode = UITextFieldViewModeWhileEditing;
@@ -439,15 +441,15 @@ static void MGPost(NSString *path, NSDictionary *body,
     [self.submit setTitle:@"立即激活" forState:UIControlStateNormal];
     [self.submit setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     self.submit.titleLabel.font = [UIFont boldSystemFontOfSize:17];
-    self.submit.backgroundColor = [UIColor colorWithRed:0.20 green:0.50 blue:1.0 alpha:1];
-    self.submit.layer.cornerRadius = 10;
+    self.submit.backgroundColor = [UIColor colorWithRed:0.067 green:0.067 blue:0.078 alpha:1];
+    self.submit.layer.cornerRadius = 12;
     [self.submit addTarget:self action:@selector(tapSubmit) forControlEvents:UIControlEventTouchUpInside];
     self.submit.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.submit];
 
     self.hint = [UILabel new];
     self.hint.font = [UIFont systemFontOfSize:13];
-    self.hint.textColor = [UIColor colorWithRed:1 green:0.45 blue:0.45 alpha:1];
+    self.hint.textColor = [UIColor colorWithRed:0.85 green:0.20 blue:0.24 alpha:1];
     self.hint.textAlignment = NSTextAlignmentCenter;
     self.hint.numberOfLines = 0;
     self.hint.translatesAutoresizingMaskIntoConstraints = NO;
@@ -455,14 +457,14 @@ static void MGPost(NSString *path, NSDictionary *body,
 
     self.expiry = [UILabel new];
     self.expiry.font = [UIFont systemFontOfSize:12];
-    self.expiry.textColor = [UIColor colorWithWhite:1 alpha:0.35];
+    self.expiry.textColor = [UIColor colorWithRed:0.725 green:0.741 blue:0.784 alpha:1];
     self.expiry.textAlignment = NSTextAlignmentCenter;
     self.expiry.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.expiry];
 
     UIButton *paste = [UIButton buttonWithType:UIButtonTypeSystem];
     [paste setTitle:@"粘贴卡密" forState:UIControlStateNormal];
-    [paste setTitleColor:[UIColor colorWithWhite:1 alpha:0.6] forState:UIControlStateNormal];
+    [paste setTitleColor:[UIColor colorWithRed:0.420 green:0.443 blue:0.498 alpha:1] forState:UIControlStateNormal];
     paste.titleLabel.font = [UIFont systemFontOfSize:13];
     [paste addTarget:self action:@selector(tapPaste) forControlEvents:UIControlEventTouchUpInside];
     paste.translatesAutoresizingMaskIntoConstraints = NO;
