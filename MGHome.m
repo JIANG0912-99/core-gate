@@ -87,6 +87,7 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 @property (nonatomic, strong) CAGradientLayer *menuGradient;
 @property (nonatomic, assign) BOOL menuOpen;
 @property (nonatomic, assign) BOOL hasRestyled;
+@property (nonatomic, assign) NSInteger zeroCount;
 @property (nonatomic, strong) NSTimer *stateTimer;
 - (void)refreshInfo;
 - (void)tapMenu;
@@ -465,18 +466,31 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
     extern BOOL MGTapOrb(void);
 
     if (self.menuOpen) {
-        // 关闭菜单：浮球消失（如果面板还开着，先让原版收起）
+        // 关闭菜单：面板开着才去收，避免把收起的面板又点开
         [self applyMenuState:NO];
-        @try { MGTapOrb(); } @catch (NSException *e) {}          // 先收面板
-        @try { MGCloseMenuWindow(); } @catch (NSException *e) {} // 再让浮球不可见
-        self.hasRestyled = NO;
+        extern BOOL MGIsPanelOpen(void);
+        BOOL panelOpen = NO;
+        @try { panelOpen = MGIsPanelOpen(); } @catch (NSException *e) {}
+        if (panelOpen) { @try { MGTapOrb(); } @catch (NSException *e) {} }
+        @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
+        self.zeroCount = 0;
     } else {
         // 打开菜单：只让浮球出现，不自动展开面板
         [self applyMenuState:YES];
         BOOL restored = NO;
         @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
-        if (!restored) MGTrigger(@"打开菜单");
-        self.hasRestyled = NO;
+        if (!restored) {
+            MGTrigger(@"打开菜单");
+            // 保险：0.6 秒后还没浮窗，再触发一次（原版偶尔会漏掉首次点击）
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.6 * NSEC_PER_SEC)),
+                           dispatch_get_main_queue(), ^{
+                extern BOOL MGMenuIsOpen(void);
+                BOOL ok = NO;
+                @try { ok = MGMenuIsOpen(); } @catch (NSException *e) {}
+                if (!ok) { @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {} }
+            });
+        }
+        self.zeroCount = 0;
     }
 }
 
@@ -503,10 +517,20 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)syncMenuState {
-    // 只同步按钮上的文字/颜色，绝不操作原版窗口
     extern BOOL MGMenuIsOpen(void);
-    BOOL open = MGMenuIsOpen();
-    if (open != self.menuOpen) [self applyMenuState:open];
+    BOOL open = NO;
+    @try { open = MGMenuIsOpen(); } @catch (NSException *e) {}
+
+    if (open) {
+        self.zeroCount = 0;
+        return;   // 浮窗在 → 不动按钮状态
+    }
+    // 连续几次都检测不到浮窗，才认为真的关了（避免原版创建过程中把按钮改回去）
+    self.zeroCount += 1;
+    if (self.zeroCount >= 4 && self.menuOpen) {
+        self.zeroCount = 0;
+        [self applyMenuState:NO];
+    }
 }
 
 - (void)startStateTimer {
