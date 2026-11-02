@@ -461,19 +461,10 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)tapMenu {
-    extern BOOL MGShowMenuWindow(void);
-    extern void MGCloseMenuWindow(void);
-
-    if (self.menuOpen) {
-        // 关闭：把浮球窗口层级压到首页下面（视觉上消失，窗口不销毁）
-        [self applyMenuState:NO];
-        @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
-    } else {
-        // 打开：恢复层级 + 触发原版，两个都做（双保险，幂等安全）
-        [self applyMenuState:YES];
-        @try { MGShowMenuWindow(); } @catch (NSException *e) {}
-        @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {}
-    }
+    // 最终版：只转发点击给原版按钮，不碰任何窗口。
+    // 球能正常出现（已验证）；关闭由原版自己决定，能关就关，不能关球就留在屏幕上。
+    MGTrigger(@"打开菜单");
+    [self applyMenuState:!self.menuOpen];
 }
 
 - (void)restyleIfNeeded {
