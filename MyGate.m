@@ -953,8 +953,9 @@ void MGResetMenuWindows(void) {
     } @catch (NSException *e) {}
 }
 
-// 恢复：所有浮窗窗口（含悬浮球），同时修正 alpha
-void MGShowMenuWindow(void) {
+// 恢复：把所有浮窗窗口显示出来；返回是否有窗口被恢复
+BOOL MGShowMenuWindow(void) {
+    BOOL any = NO;
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
@@ -963,9 +964,11 @@ void MGShowMenuWindow(void) {
                       w.bounds.size.width, w.bounds.size.height);
                 w.alpha = 1.0;
                 w.hidden = NO;
+                any = YES;
             }
         }
     } @catch (NSException *e) {}
+    return any;
 }
 
 // 诊断：收集浮窗视图树文本
