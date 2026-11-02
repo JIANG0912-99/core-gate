@@ -460,23 +460,10 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)tapMenu {
-    extern void MGCloseMenuWindow(void);
-    extern void MGRestyleMenuWindow(void);
-
-    if (self.menuOpen) {
-        // 关闭：立刻改 UI，再关窗口
-        [self applyMenuState:NO];
-        @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
-        self.hasRestyled = NO;
-    } else {
-        // 打开：先尝试恢复已存在的浮窗（瞬时），恢复不了才触发原版
-        extern BOOL MGShowMenuWindow(void);
-        [self applyMenuState:YES];
-        self.hasRestyled = NO;
-        BOOL restored = NO;
-        @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
-        if (!restored) MGTrigger(@"打开菜单");
-    }
+    // 只做一件事：把点击转发给原版的「打开菜单」按钮。
+    // 原版怎么创建/显示/隐藏浮窗，全部由它自己决定，我方不碰任何窗口。
+    MGTrigger(@"打开菜单");
+    [self applyMenuState:!self.menuOpen];
 }
 
 - (void)restyleIfNeeded {
@@ -502,16 +489,10 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)syncMenuState {
+    // 只同步按钮上的文字/颜色，绝不操作原版窗口
     extern BOOL MGMenuIsOpen(void);
-    extern void MGCloseMenuWindow(void);
     BOOL open = MGMenuIsOpen();
-
-    if (!self.menuOpen) {
-        // 用户要它关着 → 持续压制
-        if (open) { @try { MGCloseMenuWindow(); } @catch (NSException *e) {} }
-        return;
-    }
-    // 用户要它开着 → 完全不干预，交给原版自己管（避免和 ImGui 生命周期打架）
+    if (open != self.menuOpen) [self applyMenuState:open];
 }
 
 - (void)startStateTimer {
