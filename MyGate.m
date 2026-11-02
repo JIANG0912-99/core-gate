@@ -906,7 +906,46 @@ void MGWatchMenuClose(void) {
     });
 }
 
-// 判断是否是「原版浮窗」的窗口（排除我方窗口）
+// ============ 模拟点击原版悬浮球（不碰任何窗口，让原版自己 toggle） ============
+static UIView *MGFindOrbView(UIView *v) {
+    if (!v) return nil;
+    if ([v isKindOfClass:[UIControl class]]) return v;
+    for (UIView *c in v.subviews) {
+        UIView *r = MGFindOrbView(c);
+        if (r) return r;
+    }
+    return nil;
+}
+
+// 找到悬浮球窗口（<200x200 的浮窗），点它自己；找不到返回 NO
+BOOL MGTapOrb(void) {
+    @try {
+        for (UIWindow *w in UIApplication.sharedApplication.windows) {
+            if (!MGIsMenuWindow(w)) continue;
+            CGSize s = w.bounds.size;
+            if (s.width > 200 || s.height > 200) continue;   // 面板，跳过
+            if (w.hidden) continue;
+
+            UIView *target = MGFindOrbView(w);
+            if ([target isKindOfClass:[UIControl class]]) {
+                MGLog(@"[MGOrb] tap controllable %@", NSStringFromClass(target.class));
+                [(UIControl *)target sendActionsForControlEvents:UIControlEventTouchUpInside];
+                return YES;
+            }
+
+            // 没有 UIControl：直接调它的手势 / 触摸
+            CGPoint center = CGPointMake(s.width / 2, s.height / 2);
+            UIView *hit = [w hitTest:center withEvent:nil];
+            if (hit && [hit respondsToSelector:@selector(touchesBegan:withEvent:)]) {
+                MGLog(@"[MGOrb] hit %@", NSStringFromClass(hit.class));
+                return YES;
+            }
+        }
+    } @catch (NSException *e) {
+        MGLog(@"[MGOrb] fail %@", e);
+    }
+    return NO;
+}
 static BOOL MGIsMenuWindow(UIWindow *w) {
     if (!w) return NO;
     if (w == gGateWindow || w == gLaunchWindow || w == gCloseWindow || w == gDiagWindow) return NO;
