@@ -460,10 +460,23 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)tapMenu {
-    // 只做一件事：把点击转发给原版的「打开菜单」按钮。
-    // 原版怎么创建/显示/隐藏浮窗，全部由它自己决定，我方不碰任何窗口。
-    MGTrigger(@"打开菜单");
-    [self applyMenuState:!self.menuOpen];
+    extern BOOL MGTapOrb(void);
+
+    if (self.menuOpen) {
+        // 已打开 → 点小球收起（原版自己 toggle）
+        BOOL hit = NO;
+        @try { hit = MGTapOrb(); } @catch (NSException *e) {}
+        if (!hit) { MGTrigger(@"打开菜单"); }
+        [self applyMenuState:NO];
+    } else {
+        // 未打开 → 触发原版创建悬浮球，再自动点一次展开面板
+        MGTrigger(@"打开菜单");
+        [self applyMenuState:YES];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            @try { MGTapOrb(); } @catch (NSException *e) {}
+        });
+    }
 }
 
 - (void)restyleIfNeeded {
