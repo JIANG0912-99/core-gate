@@ -907,6 +907,8 @@ void MGWatchMenuClose(void) {
 }
 
 // ============ 模拟点击原版悬浮球（不碰任何窗口，让原版自己 toggle） ============
+static BOOL MGIsMenuWindow(UIWindow *w);
+
 static UIView *MGFindOrbView(UIView *v) {
     if (!v) return nil;
     if ([v isKindOfClass:[UIControl class]]) return v;
