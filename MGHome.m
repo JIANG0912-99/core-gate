@@ -460,22 +460,23 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)tapMenu {
+    extern BOOL MGShowMenuWindow(void);
+    extern void MGCloseMenuWindow(void);
     extern BOOL MGTapOrb(void);
 
     if (self.menuOpen) {
-        // 已打开 → 点小球收起（原版自己 toggle）
-        BOOL hit = NO;
-        @try { hit = MGTapOrb(); } @catch (NSException *e) {}
-        if (!hit) { MGTrigger(@"打开菜单"); }
+        // 关闭菜单：浮球消失（如果面板还开着，先让原版收起）
         [self applyMenuState:NO];
+        @try { MGTapOrb(); } @catch (NSException *e) {}          // 先收面板
+        @try { MGCloseMenuWindow(); } @catch (NSException *e) {} // 再让浮球不可见
+        self.hasRestyled = NO;
     } else {
-        // 未打开 → 触发原版创建悬浮球，再自动点一次展开面板
-        MGTrigger(@"打开菜单");
+        // 打开菜单：只让浮球出现，不自动展开面板
         [self applyMenuState:YES];
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)),
-                       dispatch_get_main_queue(), ^{
-            @try { MGTapOrb(); } @catch (NSException *e) {}
-        });
+        BOOL restored = NO;
+        @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
+        if (!restored) MGTrigger(@"打开菜单");
+        self.hasRestyled = NO;
     }
 }
 
