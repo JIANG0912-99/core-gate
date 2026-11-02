@@ -461,37 +461,10 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)tapMenu {
-    extern BOOL MGShowMenuWindow(void);
-    extern void MGCloseMenuWindow(void);
-    extern BOOL MGTapOrb(void);
-
-    if (self.menuOpen) {
-        // 关闭菜单：面板开着才去收，避免把收起的面板又点开
-        [self applyMenuState:NO];
-        extern BOOL MGIsPanelOpen(void);
-        BOOL panelOpen = NO;
-        @try { panelOpen = MGIsPanelOpen(); } @catch (NSException *e) {}
-        if (panelOpen) { @try { MGTapOrb(); } @catch (NSException *e) {} }
-        @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
-        self.zeroCount = 0;
-    } else {
-        // 打开菜单：只让浮球出现，不自动展开面板
-        [self applyMenuState:YES];
-        BOOL restored = NO;
-        @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
-        if (!restored) {
-            MGTrigger(@"打开菜单");
-            // 保险：0.6 秒后还没浮窗，再触发一次（原版偶尔会漏掉首次点击）
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.6 * NSEC_PER_SEC)),
-                           dispatch_get_main_queue(), ^{
-                extern BOOL MGMenuIsOpen(void);
-                BOOL ok = NO;
-                @try { ok = MGMenuIsOpen(); } @catch (NSException *e) {}
-                if (!ok) { @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {} }
-            });
-        }
-        self.zeroCount = 0;
-    }
+    // 最简：只把点击转发给原版的「打开菜单」按钮。
+    // 原版自己 toggle：点一下球出来，再点一下球消失。我方不碰任何窗口。
+    MGTrigger(@"打开菜单");
+    [self applyMenuState:!self.menuOpen];
 }
 
 - (void)restyleIfNeeded {
@@ -517,29 +490,8 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)syncMenuState {
-    extern BOOL MGMenuIsOpen(void);
-    extern BOOL MGShowMenuWindow(void);
-
-    BOOL open = NO;
-    @try { open = MGMenuIsOpen(); } @catch (NSException *e) {}
-    if (open) { self.zeroCount = 0; return; }
-
-    if (!self.menuOpen) { self.zeroCount = 0; return; }
-
-    // 用户要它开着，但看不到 → 先尝试把已有窗口的透明度拉回来
-    BOOL restored = NO;
-    @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
-    if (restored) { self.zeroCount = 0; return; }
-
-    // 完全没有窗口 → 触发原版创建，最多重试几次
-    self.zeroCount += 1;
-    if (self.zeroCount == 2 || self.zeroCount == 6) {
-        @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {}
-    }
-    if (self.zeroCount >= 12) {
-        self.zeroCount = 0;
-        [self applyMenuState:NO];   // 实在起不来，状态回退
-    }
+    // 完全退出：不碰任何窗口，不自动改按钮。
+    // 按钮状态完全由用户点击决定（toggle 由原版自己处理）。
 }
 
 - (void)startStateTimer {
