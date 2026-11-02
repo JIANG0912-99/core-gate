@@ -461,10 +461,20 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)tapMenu {
-    // 最简：只把点击转发给原版的「打开菜单」按钮。
-    // 原版自己 toggle：点一下球出来，再点一下球消失。我方不碰任何窗口。
-    MGTrigger(@"打开菜单");
-    [self applyMenuState:!self.menuOpen];
+    extern BOOL MGShowMenuWindow(void);
+    extern void MGCloseMenuWindow(void);
+
+    if (self.menuOpen) {
+        // 关闭：把浮球窗口层级压到首页下面（视觉上消失，窗口不销毁）
+        [self applyMenuState:NO];
+        @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
+    } else {
+        // 打开：有浮窗窗口就提回最高层；没有就触发原版创建
+        [self applyMenuState:YES];
+        BOOL restored = NO;
+        @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
+        if (!restored) { @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {} }
+    }
 }
 
 - (void)restyleIfNeeded {
