@@ -963,6 +963,17 @@ static BOOL MGIsPanelWindow(UIWindow *w) {
     return s.width > 200 && s.height > 200;
 }
 
+// 面板（大窗口）是否打开
+BOOL MGIsPanelOpen(void) {
+    @try {
+        for (UIWindow *w in UIApplication.sharedApplication.windows) {
+            if (!MGIsPanelWindow(w)) continue;
+            if (!w.hidden && w.alpha > 0.05) return YES;
+        }
+    } @catch (NSException *e) {}
+    return NO;
+}
+
 BOOL MGMenuIsOpen(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
