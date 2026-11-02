@@ -469,11 +469,9 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
         @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
         self.hasRestyled = NO;
     } else {
-        // 打开：立刻改 UI，清残留后马上触发（不再等 0.15 秒）
-        extern void MGResetMenuWindows(void);
+        // 打开：立刻改 UI，直接触发原版（不预先隐藏窗口，否则原版会认为「还开着」而不创建）
         [self applyMenuState:YES];
         self.hasRestyled = NO;
-        @try { MGResetMenuWindows(); } @catch (NSException *e) {}
         MGTrigger(@"打开菜单");
     }
 }
