@@ -487,11 +487,8 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 }
 
 - (void)restyleIfNeeded {
-    extern BOOL MGMenuIsOpen(void);
-    extern void MGRestyleMenuWindow(void);
-    if (!self.menuOpen) return;
-    if (!MGMenuIsOpen()) return;
-    MGRestyleMenuWindow();
+    // 浮窗内容由 ImGui 每帧重绘，外部无法改样式；诊断已完成，这里不再做任何事。
+    return;
 }
 
 - (void)applyMenuState:(BOOL)open {
@@ -514,7 +511,6 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 - (void)syncMenuState {
     extern BOOL MGMenuIsOpen(void);
     extern void MGCloseMenuWindow(void);
-    extern void MGShowMenuWindow(void);
     BOOL open = MGMenuIsOpen();
 
     if (!self.menuOpen) {
@@ -522,9 +518,7 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
         if (open) { @try { MGCloseMenuWindow(); } @catch (NSException *e) {} }
         return;
     }
-    // 用户要它开着 → 被系统收走就恢复
-    if (!open) { @try { MGShowMenuWindow(); } @catch (NSException *e) {} }
-    else [self restyleIfNeeded];
+    // 用户要它开着 → 完全不干预，交给原版自己管（避免和 ImGui 生命周期打架）
 }
 
 - (void)startStateTimer {
