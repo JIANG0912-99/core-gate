@@ -469,11 +469,10 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
         [self applyMenuState:NO];
         @try { MGCloseMenuWindow(); } @catch (NSException *e) {}
     } else {
-        // 打开：有浮窗窗口就提回最高层；没有就触发原版创建
+        // 打开：恢复层级 + 触发原版，两个都做（双保险，幂等安全）
         [self applyMenuState:YES];
-        BOOL restored = NO;
-        @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
-        if (!restored) { @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {} }
+        @try { MGShowMenuWindow(); } @catch (NSException *e) {}
+        @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {}
     }
 }
 
