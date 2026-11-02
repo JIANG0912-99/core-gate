@@ -929,24 +929,24 @@ BOOL MGMenuIsOpen(void) {
     return NO;
 }
 
-// 关闭面板：只收「面板」，悬浮球（71x71）永远保留，否则原版的跨 App 常驻会失效
+// 关闭：面板 + 悬浮球 全部收起
 void MGCloseMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (!MGIsPanelWindow(w)) continue;
-            MGLog(@"[MGMenu] close panel %@ %.0fx%.0f", NSStringFromClass(w.class),
+            if (!MGIsMenuWindow(w)) continue;
+            MGLog(@"[MGMenu] close %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
             w.hidden = YES;
         }
     } @catch (NSException *e) {}
 }
 
-// 重置：同样只收面板，绝不动悬浮球
+// 重置：同样全部收起（含悬浮球），让原版状态机回到「未打开」
 void MGResetMenuWindows(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (!MGIsPanelWindow(w)) continue;
-            MGLog(@"[MGMenu] reset panel %@ %.0fx%.0f", NSStringFromClass(w.class),
+            if (!MGIsMenuWindow(w)) continue;
+            MGLog(@"[MGMenu] reset %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
             w.hidden = YES;
         }
