@@ -966,23 +966,21 @@ static BOOL MGIsPanelWindow(UIWindow *w) {
 BOOL MGMenuIsOpen(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (!MGIsPanelWindow(w)) continue;
-            if (w.hidden || w.alpha < 0.05) continue;
-            if (w.transform.tx < -10000 || w.transform.ty < -10000) continue;  // 已挪出屏幕
-            return YES;
+            if (!MGIsMenuWindow(w)) continue;
+            if (!w.hidden && w.alpha > 0.05) return YES;
         }
     } @catch (NSException *e) {}
     return NO;
 }
 
-// 关闭：把窗口整体挪到屏幕外（对象、状态全部保留，原版察觉不到）
+// 关闭：让浮球不可见（窗口保留，原版状态不动）
 void MGCloseMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] offscreen %@ %.0fx%.0f", NSStringFromClass(w.class),
+            MGLog(@"[MGMenu] hide %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
-            w.transform = CGAffineTransformMakeTranslation(-20000, -20000);
+            w.alpha = 0.0;
         }
     } @catch (NSException *e) {}
 }
@@ -992,18 +990,16 @@ void MGResetMenuWindows(void) {
     MGCloseMenuWindow();
 }
 
-// 恢复：挪回原位；返回是否有窗口被恢复
+// 恢复：让浮球重新可见；返回是否存在浮窗窗口
 BOOL MGShowMenuWindow(void) {
     BOOL any = NO;
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] restore %@ %.0fx%.0f", NSStringFromClass(w.class),
+            MGLog(@"[MGMenu] show %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
             w.hidden = NO;
             w.alpha = 1.0;
-            w.userInteractionEnabled = YES;
-            w.transform = CGAffineTransformIdentity;
             any = YES;
         }
     } @catch (NSException *e) {}
