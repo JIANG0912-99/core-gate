@@ -923,21 +923,23 @@ static BOOL MGIsPanelWindow(UIWindow *w) {
 BOOL MGMenuIsOpen(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (MGIsPanelWindow(w) && !w.hidden && w.alpha > 0.05) return YES;
+            if (!MGIsPanelWindow(w)) continue;
+            if (w.hidden || w.alpha < 0.05) continue;
+            if (w.transform.tx < -10000 || w.transform.ty < -10000) continue;  // 已挪出屏幕
+            return YES;
         }
     } @catch (NSException *e) {}
     return NO;
 }
 
-// 关闭：窗口对象保留，只做透明 + 不响应触摸（不 hidden，避免原版销毁窗口 / 状态错乱）
+// 关闭：把窗口整体挪到屏幕外（对象、状态全部保留，原版察觉不到）
 void MGCloseMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] hide %@ %.0fx%.0f", NSStringFromClass(w.class),
+            MGLog(@"[MGMenu] offscreen %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
-            w.alpha = 0.0;
-            w.userInteractionEnabled = NO;
+            w.transform = CGAffineTransformMakeTranslation(-20000, -20000);
         }
     } @catch (NSException *e) {}
 }
@@ -947,17 +949,18 @@ void MGResetMenuWindows(void) {
     MGCloseMenuWindow();
 }
 
-// 恢复：把透明度调回来；返回是否有窗口被恢复
+// 恢复：挪回原位；返回是否有窗口被恢复
 BOOL MGShowMenuWindow(void) {
     BOOL any = NO;
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] show %@ %.0fx%.0f", NSStringFromClass(w.class),
+            MGLog(@"[MGMenu] restore %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
             w.hidden = NO;
             w.alpha = 1.0;
             w.userInteractionEnabled = YES;
+            w.transform = CGAffineTransformIdentity;
             any = YES;
         }
     } @catch (NSException *e) {}
