@@ -929,43 +929,36 @@ BOOL MGMenuIsOpen(void) {
     return NO;
 }
 
-// 关闭：面板 + 悬浮球 全部收起
+// 关闭：窗口对象保留，只做透明 + 不响应触摸（不 hidden，避免原版销毁窗口 / 状态错乱）
 void MGCloseMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] close %@ %.0fx%.0f", NSStringFromClass(w.class),
+            MGLog(@"[MGMenu] hide %@ %.0fx%.0f", NSStringFromClass(w.class),
                   w.bounds.size.width, w.bounds.size.height);
-            w.hidden = YES;
+            w.alpha = 0.0;
+            w.userInteractionEnabled = NO;
         }
     } @catch (NSException *e) {}
 }
 
-// 重置：同样全部收起（含悬浮球），让原版状态机回到「未打开」
+// 重置：同关闭
 void MGResetMenuWindows(void) {
-    @try {
-        for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] reset %@ %.0fx%.0f", NSStringFromClass(w.class),
-                  w.bounds.size.width, w.bounds.size.height);
-            w.hidden = YES;
-        }
-    } @catch (NSException *e) {}
+    MGCloseMenuWindow();
 }
 
-// 恢复：把所有浮窗窗口显示出来；返回是否有窗口被恢复
+// 恢复：把透明度调回来；返回是否有窗口被恢复
 BOOL MGShowMenuWindow(void) {
     BOOL any = NO;
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            if (w.hidden || w.alpha < 0.05) {
-                MGLog(@"[MGMenu] show %@ %.0fx%.0f", NSStringFromClass(w.class),
-                      w.bounds.size.width, w.bounds.size.height);
-                w.alpha = 1.0;
-                w.hidden = NO;
-                any = YES;
-            }
+            MGLog(@"[MGMenu] show %@ %.0fx%.0f", NSStringFromClass(w.class),
+                  w.bounds.size.width, w.bounds.size.height);
+            w.hidden = NO;
+            w.alpha = 1.0;
+            w.userInteractionEnabled = YES;
+            any = YES;
         }
     } @catch (NSException *e) {}
     return any;
