@@ -953,6 +953,8 @@ BOOL MGTapOrb(void) {
 static BOOL MGIsMenuWindow(UIWindow *w) {
     if (!w) return NO;
     if (w == gGateWindow || w == gLaunchWindow || w == gCloseWindow || w == gDiagWindow) return NO;
+    NSString *cls = NSStringFromClass(w.class);
+    if ([cls hasPrefix:@"QXA"]) return YES;   // 原版浮窗类名，层级被改也认得出
     return w.windowLevel >= 5000;
 }
 
@@ -978,20 +980,20 @@ BOOL MGMenuIsOpen(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
+            if (w.windowLevel < 5000) continue;      // 层级被压低 = 关闭状态
             if (!w.hidden && w.alpha > 0.05) return YES;
         }
     } @catch (NSException *e) {}
     return NO;
 }
 
-// 关闭：让浮球不可见（窗口保留，原版状态不动）
+// 关闭：把窗口层级降到 0，被首页盖住（窗口本身保留，原版不会销毁）
 void MGCloseMenuWindow(void) {
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] hide %@ %.0fx%.0f", NSStringFromClass(w.class),
-                  w.bounds.size.width, w.bounds.size.height);
-            w.alpha = 0.0;
+            MGLog(@"[MGMenu] lower %@ lv=%.0f", NSStringFromClass(w.class), w.windowLevel);
+            w.windowLevel = 0;
         }
     } @catch (NSException *e) {}
 }
@@ -1001,17 +1003,19 @@ void MGResetMenuWindows(void) {
     MGCloseMenuWindow();
 }
 
-// 恢复：让浮球重新可见；返回是否存在浮窗窗口
+// 恢复：把层级提回最高
 BOOL MGShowMenuWindow(void) {
     BOOL any = NO;
     @try {
         for (UIWindow *w in UIApplication.sharedApplication.windows) {
             if (!MGIsMenuWindow(w)) continue;
-            MGLog(@"[MGMenu] show %@ %.0fx%.0f", NSStringFromClass(w.class),
-                  w.bounds.size.width, w.bounds.size.height);
-            w.hidden = NO;
-            w.alpha = 1.0;
-            any = YES;
+            if (w.windowLevel < 5000) {
+                MGLog(@"[MGMenu] raise %@", NSStringFromClass(w.class));
+                w.windowLevel = 20000000;
+                any = YES;
+            } else {
+                any = YES;
+            }
         }
     } @catch (NSException *e) {}
     return any;
