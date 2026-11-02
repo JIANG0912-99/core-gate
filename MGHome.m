@@ -518,18 +518,27 @@ static UILabel *MGLabel(NSString *text, CGFloat size, BOOL bold, UIColor *color)
 
 - (void)syncMenuState {
     extern BOOL MGMenuIsOpen(void);
+    extern BOOL MGShowMenuWindow(void);
+
     BOOL open = NO;
     @try { open = MGMenuIsOpen(); } @catch (NSException *e) {}
+    if (open) { self.zeroCount = 0; return; }
 
-    if (open) {
-        self.zeroCount = 0;
-        return;   // 浮窗在 → 不动按钮状态
-    }
-    // 连续几次都检测不到浮窗，才认为真的关了（避免原版创建过程中把按钮改回去）
+    if (!self.menuOpen) { self.zeroCount = 0; return; }
+
+    // 用户要它开着，但看不到 → 先尝试把已有窗口的透明度拉回来
+    BOOL restored = NO;
+    @try { restored = MGShowMenuWindow(); } @catch (NSException *e) {}
+    if (restored) { self.zeroCount = 0; return; }
+
+    // 完全没有窗口 → 触发原版创建，最多重试几次
     self.zeroCount += 1;
-    if (self.zeroCount >= 4 && self.menuOpen) {
+    if (self.zeroCount == 2 || self.zeroCount == 6) {
+        @try { MGTrigger(@"打开菜单"); } @catch (NSException *e) {}
+    }
+    if (self.zeroCount >= 12) {
         self.zeroCount = 0;
-        [self applyMenuState:NO];
+        [self applyMenuState:NO];   // 实在起不来，状态回退
     }
 }
 
