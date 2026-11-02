@@ -10,10 +10,11 @@ jobs:
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           clang -dynamiclib -arch arm64e -isysroot "$SDK" \
             -miphoneos-version-min=17.0 -fobjc-arc -O2 \
-            -framework Foundation -framework UIKit -framework Security -framework CFNetwork -framework QuartzCore \
+            -framework Foundation -framework UIKit -framework Security \
+            -framework CFNetwork -framework QuartzCore -framework CoreGraphics \
             -install_name @executable_path/CCCoreLicense.dylib \
             MyGate.m MGHome.m -o CCCoreLicense.dylib
-          echo "----- 产物 -----"
+          echo "----- build ok -----"
           lipo -info CCCoreLicense.dylib
           ls -l CCCoreLicense.dylib
       - uses: actions/upload-artifact@v4
