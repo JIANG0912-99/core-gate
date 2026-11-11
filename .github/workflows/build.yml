@@ -1,23 +1,17 @@
 name: build
-on: workflow_dispatch
+on:
+  workflow_dispatch:
 jobs:
   build:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Build arm64e
+      - name: Compile
         run: |
-          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          clang -dynamiclib -arch arm64e -isysroot "$SDK" \
-            -miphoneos-version-min=17.0 -fobjc-arc -O2 \
-            -framework Foundation -framework UIKit -framework Security \
-            -framework CFNetwork -framework QuartzCore -framework CoreGraphics \
-            -install_name @executable_path/CCCoreLicense.dylib \
-            MyGate.m MGHome.m -o CCCoreLicense.dylib
-          echo "----- build ok -----"
-          lipo -info CCCoreLicense.dylib
-          ls -l CCCoreLicense.dylib
+          clang -dynamiclib -arch arm64e -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=17.0 -fobjc-arc -O2 -framework Foundation -framework UIKit -install_name @executable_path/MGUnlock.dylib MGUnlock.m -o MGUnlock.dylib
+          ls -la MGUnlock.dylib
+          file MGUnlock.dylib
       - uses: actions/upload-artifact@v4
         with:
-          name: dylib
-          path: CCCoreLicense.dylib
+          name: unlock-dylib
+          path: MGUnlock.dylib
