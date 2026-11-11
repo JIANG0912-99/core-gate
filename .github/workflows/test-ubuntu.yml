@@ -1,0 +1,8 @@
+name: test-ubuntu
+on:
+  workflow_dispatch:
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo OK && uname -a && gcc --version | head -1
